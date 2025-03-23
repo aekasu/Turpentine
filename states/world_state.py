@@ -16,8 +16,6 @@ class WorldState(State):
             pygame.K_a: 'left',
             pygame.K_s: 'down',
             pygame.K_d: 'right',
-            pygame.K_j: 'turn_left',
-            pygame.K_l: 'turn_right',
             pygame.K_ESCAPE: 'quit',
         }
 
@@ -29,7 +27,7 @@ class WorldState(State):
 
         self.last_rumble = 0
         self.rumble_cooldown = 500
-        self.player_speed = 1  # Pixels per second
+        self.player_speed = 2  # Pixels per second
         self.rotation_speed = 180  # Degrees per second
 
         self.init_controls()
@@ -132,27 +130,26 @@ class WorldState(State):
         move_x = 0
         move_y = 0
 
-        angle_rad = math.radians(self.player.angle)
-        cos_a = math.cos(angle_rad)
-        sin_a = math.sin(angle_rad)
-        
-        if self.actions['forward']:
-            move_x += cos_a * self.player_speed
-            move_y += sin_a * self.player_speed
-        if self.actions['backward']:
-            move_x -= cos_a * self.player_speed
-            move_y -= sin_a * self.player_speed
-        if self.actions['strafe_left']:
-            move_x += sin_a * self.player_speed
-            move_y -= cos_a * self.player_speed
-        if self.actions['strafe_right']:
-            move_x -= sin_a * self.player_speed
-            move_y += cos_a * self.player_speed
-        
-        self.player.move(move_x, move_y, dt)
-        
-        self.player.angle += self.rotation_speed * dt * float(self.actions['turn_left'])
-        self.player.angle -= self.rotation_speed * dt * float(self.actions['turn_right'])
+        if isinstance(self.actions['forward'], float):
+            move_y += self.actions['forward']
+        if isinstance(self.actions['backward'], float):
+            move_y -= self.actions['backward']
+        if isinstance(self.actions['strafe_left'], float):
+            move_x += self.actions['strafe_left']
+        if isinstance(self.actions['strafe_right'], float):
+            move_x -= self.actions['strafe_right']
+
+        if move_x or move_y:
+            angle_rad = math.radians(self.player.angle)
+            dx = (-math.sin(angle_rad) * move_y + -math.cos(angle_rad) * move_x)
+            dy = (-math.cos(angle_rad) * move_y + math.sin(angle_rad) * move_x)
+            self.player.move(dx, dy, dt)
+
+        if isinstance(self.actions['turn_left'], float) and self.actions['turn_left'] > 0:
+            self.player.angle += self.rotation_speed * dt * self.actions['turn_left']
+        if isinstance(self.actions['turn_right'], float) and self.actions['turn_right'] > 0:
+            self.player.angle -= self.rotation_speed * dt * self.actions['turn_right']
+
         self.player.angle %= 360
 
         if self.actions['quit']:
@@ -177,3 +174,21 @@ class WorldState(State):
 
         angle_rad = math.radians(self.player.angle)
         self.camera.custom_draw(angle_rad)
+
+        # Draw compass lines at the top right corner
+        compass_center = (surface.get_width() - 40, 40)
+        compass_length = 30
+        
+        x1 = compass_center[0] + math.cos(angle_rad) * compass_length
+        y1 = compass_center[1] + math.sin(angle_rad) * compass_length
+        x2 = compass_center[0] - math.cos(angle_rad) * compass_length
+        y2 = compass_center[1] - math.sin(angle_rad) * compass_length
+        
+        pygame.draw.line(surface, (255, 255, 255), (x1, y1), (x2, y2), 2)
+        
+        x3 = compass_center[0] + math.cos(angle_rad + math.pi/2) * compass_length
+        y3 = compass_center[1] + math.sin(angle_rad + math.pi/2) * compass_length
+        x4 = compass_center[0] - math.cos(angle_rad + math.pi/2) * compass_length
+        y4 = compass_center[1] - math.sin(angle_rad + math.pi/2) * compass_length
+        
+        pygame.draw.line(surface, (255, 255, 255), (x3, y3), (x4, y4), 2)
