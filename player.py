@@ -7,13 +7,13 @@ class Player(Entity):
         super().__init__(x, y, surface)
 
         self.movement_speed = 400
-        self.angle = 0
+        self.angle = 100
         
         self.forward_vector = pygame.math.Vector2(0, -1)  # Default facing up
     
     def set_angle(self, angle):
         self.angle = angle % 360
-        radians = pygame.math.radians(self.angle)
+        radians = math.radians(self.angle)
         self.forward_vector = pygame.math.Vector2(
             -math.sin(radians),
             -math.cos(radians) 
