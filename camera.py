@@ -58,7 +58,7 @@ class Camera(pygame.sprite.Group):
             
             # Create a copy of the sprite's image and rotate it
             # Note: pygame.transform.rotate expects degrees, not radians
-            rotated_image = pygame.transform.rotozoom(sprite.image.copy(), -math.degrees(angle_rad), 1)
+            rotated_image = pygame.transform.rotozoom(sprite.image.copy().convert_alpha(), -math.degrees(angle_rad), 1)
 
             
             # Position the rotated image

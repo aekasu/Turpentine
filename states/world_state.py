@@ -18,9 +18,17 @@ class WorldState(State):
             pygame.K_ESCAPE: 'quit',
         }
 
-        self.actions = {action: False for action in self.key_action_mapping.values()}
+        # Add controller actions to the actions dictionary
+        self.actions = {
+            'up': False, 'left': False, 'down': False, 'right': False, 'quit': False,
+            'forward': False, 'backward': False, 'strafe_left': False, 'strafe_right': False,
+            'turn_left': False, 'turn_right': False, 'pause': False
+        }
+        
         self.last_rumble = 0
         self.rumble_cooldown = 500
+        self.player_speed = 300  # Pixels per second
+        self.rotation_speed = 180  # Degrees per second
 
         self.init_controls()
         self.init_entities()
@@ -77,7 +85,58 @@ class WorldState(State):
         ]
 
     def update(self, dt):
-        ...
+        # Process keyboard inputs`
+        if self.actions['up']:
+            self.player.move(0, -self.player_speed * dt)
+        if self.actions['down']:
+            self.player.move(0, self.player_speed * dt)
+        if self.actions['left']:
+            self.player.move(self.player_speed * dt, 0)
+        if self.actions['right']:
+            self.player.move(-self.player_speed * dt, 0)
+
+        # Process controller movement (Left Stick)
+        move_x = 0
+        move_y = 0
+
+        if isinstance(self.actions['forward'], float):
+            move_y += self.actions['forward']
+        if isinstance(self.actions['backward'], float):
+            move_y -= self.actions['backward']
+        if isinstance(self.actions['strafe_left'], float):
+            move_x += self.actions['strafe_left']
+        if isinstance(self.actions['strafe_right'], float):
+            move_x -= self.actions['strafe_right']
+
+        if move_x or move_y:
+            angle_rad = math.radians(self.player.angle)
+            dx = (-math.sin(angle_rad) * move_y + -math.cos(angle_rad) * move_x)
+            dy = (-math.cos(angle_rad) * move_y + math.sin(angle_rad) * move_x)
+            self.player.move(dx, dy, dt)
+
+        # Process controller rotation (Right Stick)
+        if isinstance(self.actions['turn_left'], float) and self.actions['turn_left'] > 0:
+            self.player.angle += self.rotation_speed * dt * self.actions['turn_left']
+        if isinstance(self.actions['turn_right'], float) and self.actions['turn_right'] > 0:
+            self.player.angle -= self.rotation_speed * dt * self.actions['turn_right']
+
+        # Keep angle within 0-360 range
+        self.player.angle %= 360
+
+        # Handle quit action
+        if self.actions['quit']:
+            self.game.running = False
+
+        # Handle pause action
+        if self.actions['pause']:
+            print("Game paused")
+            self.actions['pause'] = False  # Reset pause action
+
+        # Check for collisions
+        for entity in self.entities:
+            if entity != self.player and self.player.rect.colliderect(entity.rect):
+                self.rumble()
+
     
     def render(self, surface):
         if not self.camera:
