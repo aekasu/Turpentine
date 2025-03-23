@@ -7,7 +7,7 @@ class Player(Entity):
         super().__init__(x, y, surface)
 
         self.movement_speed = 400
-        self.angle = 100
+        self.angle = 0
         
         self.forward_vector = pygame.math.Vector2(0, -1)  # Default facing up
     

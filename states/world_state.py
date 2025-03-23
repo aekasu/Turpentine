@@ -1,10 +1,11 @@
 import pygame
+import random
+import math
 from state import State
 from camera import Camera
 from player import Player
 from enemy import Enemy
 from inputs import KeyboardHandler, ControllerHandler
-import math
 
 class WorldState(State):
     def __init__(self, game):
@@ -15,24 +16,30 @@ class WorldState(State):
             pygame.K_a: 'left',
             pygame.K_s: 'down',
             pygame.K_d: 'right',
+            pygame.K_j: 'turn_left',
+            pygame.K_l: 'turn_right',
             pygame.K_ESCAPE: 'quit',
         }
 
-        # Add controller actions to the actions dictionary
         self.actions = {
             'up': False, 'left': False, 'down': False, 'right': False, 'quit': False,
             'forward': False, 'backward': False, 'strafe_left': False, 'strafe_right': False,
             'turn_left': False, 'turn_right': False, 'pause': False
         }
-        
+
         self.last_rumble = 0
         self.rumble_cooldown = 500
-        self.player_speed = 300  # Pixels per second
+        self.player_speed = 1  # Pixels per second
         self.rotation_speed = 180  # Degrees per second
 
         self.init_controls()
         self.init_entities()
         self.camera = None
+
+        self.spawn_timer = 0
+        self.spawn_interval = 1000  # 1 second per enemy
+        self.enemy_lifetime = 15000  # 15 seconds per enemy
+        self.enemies = []
 
         self.input_handlers = {
             'keyboard': KeyboardHandler(self, self.key_action_mapping),
@@ -40,7 +47,6 @@ class WorldState(State):
         }
     
     def init_controls(self):
-        # Controller setup
         self.has_controller = False
         self.controller = None
         
@@ -56,7 +62,6 @@ class WorldState(State):
             print("No controller detected. You can still play with keyboard.")
     
     def rumble(self, duration=500, intensity=0.7):
-        """Apply rumble to controller if available"""
         current_time = pygame.time.get_ticks()
         if current_time - self.last_rumble < self.rumble_cooldown:
             return
@@ -71,79 +76,104 @@ class WorldState(State):
                 print(f"Rumble error: {e}")
 
     def init_entities(self):
-        player_surface = pygame.Surface((20,20))
-        player_surface.fill((0,255,0))
+        player_surface = pygame.Surface((20, 20))
+        player_surface.fill((0, 255, 0))
         self.player = Player(0, 0, player_surface)
 
-        entity_surface = pygame.Surface((10, 10))
-        entity_surface.fill((255,0,0))
+        self.entities = [self.player]
 
-        self.entities = [
-            self.player,
-            Enemy(200, 200, entity_surface),
-            Enemy(-200, 200, entity_surface),
-        ]
+    def spawn_enemy(self):
+        enemy_surface = pygame.Surface((10, 10))
+        enemy_surface.fill((255, 0, 0))
+
+        # Random spawn position away from player
+        spawn_distance = 300
+        angle = random.uniform(0, math.pi * 2)
+        x = self.player.x + math.cos(angle) * spawn_distance
+        y = self.player.y + math.sin(angle) * spawn_distance
+
+        enemy = Enemy(x, y, enemy_surface)
+        enemy.spawn_time = pygame.time.get_ticks()  # Track spawn time
+        enemy.follow(self.player)
+
+        self.enemies.append(enemy)
+        self.entities.append(enemy)
+        if self.camera:
+            self.camera.add(enemy)  # Add to camera group
 
     def update(self, dt):
-        # Process keyboard inputs`
-        if self.actions['up']:
-            self.player.move(0, -self.player_speed * dt)
-        if self.actions['down']:
-            self.player.move(0, self.player_speed * dt)
-        if self.actions['left']:
-            self.player.move(self.player_speed * dt, 0)
-        if self.actions['right']:
-            self.player.move(-self.player_speed * dt, 0)
+        current_time = pygame.time.get_ticks()
 
-        # Process controller movement (Left Stick)
+        # Enemy spawning logic
+        if current_time - self.spawn_timer >= self.spawn_interval:
+            self.spawn_timer = current_time
+            self.spawn_enemy()
+
+        # Remove old enemies
+        self.enemies = [
+            enemy for enemy in self.enemies if current_time - enemy.spawn_time < self.enemy_lifetime
+        ]
+        self.entities = [self.player] + self.enemies
+
+        if self.camera:
+            self.camera.empty()  # Clear camera group
+            self.camera.add(*self.entities)  # Re-add valid entities
+
+        # Process movement inputs
+        if self.actions['up']:
+            self.player.move(0, -self.player_speed, dt)
+        if self.actions['down']:
+            self.player.move(0, self.player_speed, dt)
+        if self.actions['left']:
+            self.player.move(-self.player_speed, 0, dt)
+        if self.actions['right']:
+            self.player.move(self.player_speed, 0, dt)
+
         move_x = 0
         move_y = 0
 
-        if isinstance(self.actions['forward'], float):
-            move_y += self.actions['forward']
-        if isinstance(self.actions['backward'], float):
-            move_y -= self.actions['backward']
-        if isinstance(self.actions['strafe_left'], float):
-            move_x += self.actions['strafe_left']
-        if isinstance(self.actions['strafe_right'], float):
-            move_x -= self.actions['strafe_right']
-
-        if move_x or move_y:
-            angle_rad = math.radians(self.player.angle)
-            dx = (-math.sin(angle_rad) * move_y + -math.cos(angle_rad) * move_x)
-            dy = (-math.cos(angle_rad) * move_y + math.sin(angle_rad) * move_x)
-            self.player.move(dx, dy, dt)
-
-        # Process controller rotation (Right Stick)
-        if isinstance(self.actions['turn_left'], float) and self.actions['turn_left'] > 0:
-            self.player.angle += self.rotation_speed * dt * self.actions['turn_left']
-        if isinstance(self.actions['turn_right'], float) and self.actions['turn_right'] > 0:
-            self.player.angle -= self.rotation_speed * dt * self.actions['turn_right']
-
-        # Keep angle within 0-360 range
+        angle_rad = math.radians(self.player.angle)
+        cos_a = math.cos(angle_rad)
+        sin_a = math.sin(angle_rad)
+        
+        if self.actions['forward']:
+            move_x += cos_a * self.player_speed
+            move_y += sin_a * self.player_speed
+        if self.actions['backward']:
+            move_x -= cos_a * self.player_speed
+            move_y -= sin_a * self.player_speed
+        if self.actions['strafe_left']:
+            move_x += sin_a * self.player_speed
+            move_y -= cos_a * self.player_speed
+        if self.actions['strafe_right']:
+            move_x -= sin_a * self.player_speed
+            move_y += cos_a * self.player_speed
+        
+        self.player.move(move_x, move_y, dt)
+        
+        self.player.angle += self.rotation_speed * dt * float(self.actions['turn_left'])
+        self.player.angle -= self.rotation_speed * dt * float(self.actions['turn_right'])
         self.player.angle %= 360
 
-        # Handle quit action
         if self.actions['quit']:
             self.game.running = False
 
-        # Handle pause action
         if self.actions['pause']:
             print("Game paused")
-            self.actions['pause'] = False  # Reset pause action
+            self.actions['pause'] = False
 
-        # Check for collisions
         for entity in self.entities:
             entity.update(dt)
             if entity is not self.player:
                 entity.follow(self.player)
+
             if entity != self.player and self.player.rect.colliderect(entity.rect):
                 self.rumble()
 
-    
     def render(self, surface):
         if not self.camera:
             self.camera = Camera(surface, *self.entities)
             self.camera.target = self.player
+
         angle_rad = math.radians(self.player.angle)
         self.camera.custom_draw(angle_rad)
