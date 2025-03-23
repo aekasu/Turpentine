@@ -1,2 +1,6 @@
 # Turpentine
-Top down 2D game
+
+Run:
+```bash
+python3 game.py
+```
