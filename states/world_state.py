@@ -2,7 +2,7 @@ import pygame
 from state import State
 from camera import Camera
 from player import Player
-from entity import Entity
+from enemy import Enemy
 from inputs import KeyboardHandler, ControllerHandler
 import math
 
@@ -71,17 +71,17 @@ class WorldState(State):
                 print(f"Rumble error: {e}")
 
     def init_entities(self):
-        player_surface = pygame.Surface((60,60))
+        player_surface = pygame.Surface((20,20))
         player_surface.fill((0,255,0))
         self.player = Player(0, 0, player_surface)
 
-        entity_surface = pygame.Surface((70, 70))
+        entity_surface = pygame.Surface((10, 10))
         entity_surface.fill((255,0,0))
 
         self.entities = [
             self.player,
-            Entity(200, 200, entity_surface),
-            Entity(-200, 200, entity_surface),
+            Enemy(200, 200, entity_surface),
+            Enemy(-200, 200, entity_surface),
         ]
 
     def update(self, dt):
@@ -134,6 +134,9 @@ class WorldState(State):
 
         # Check for collisions
         for entity in self.entities:
+            entity.update(dt)
+            if entity is not self.player:
+                entity.follow(self.player)
             if entity != self.player and self.player.rect.colliderect(entity.rect):
                 self.rumble()
 
