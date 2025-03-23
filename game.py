@@ -16,7 +16,7 @@ class Font:
 
 class Game:
     def __init__(self):
-        self.SCREEN_WIDTH, self.SCREEN_HEIGHT = 700, 700
+        self.SCREEN_WIDTH, self.SCREEN_HEIGHT = 1200, 700
         self.GAME_WIDTH, self.GAME_HEIGHT = self.SCREEN_WIDTH, self.SCREEN_HEIGHT
         self.SCREEN_TITLE = 'Turpentine'
         self.ASSET_DIR = os.path.join('assets')
