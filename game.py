@@ -45,7 +45,7 @@ class Game:
         self.pygame_instance = pygame
         self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
         self.game_canvas = pygame.Surface((self.GAME_WIDTH, self.GAME_HEIGHT))
-        self.clock = pygame.time.Clock()
+        self.clock = pygame.Clock()
     
     @property
     def current_state(self):
@@ -138,7 +138,7 @@ class Game:
         pygame.quit()
 
 if __name__ == '__main__':
-    from states.test import StartState
+    from states.test import TestState as StartState
 
     g = Game()
     while g.running:

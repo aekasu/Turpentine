@@ -1,59 +1,73 @@
-import pygame
+from entity import Entity, MovingEntity
+from inputs import ControllerHandler
+from states.debug import DebugState
+from camera import Camera
 from state import State
-from states.world_state import WorldState
-from inputs import KeyboardHandler
+import random
+import pygame
+import math
 
-class StartState(State):
+class TestState(State):
     def __init__(self, game):
-        super().__init__(game)
-        
-        self.key_action_mapping = {
-            pygame.K_SPACE: 'start',
-            pygame.K_RETURN: 'start',
-            pygame.K_ESCAPE: 'quit'
-        }
-        
-        self.actions = {
-            'start': False,
-            'quit': False
-        }
-        
+        super().__init__(game, is_overlay=False)
+
+        entity_amount = 5
+        max_range = (self.game.GAME_WIDTH - 50, self.game.GAME_HEIGHT - 50)
+        entity_surface = pygame.Surface((50,50))
+        player_surface = entity_surface.copy()
+        entity_surface.fill('red')
+        player_surface.fill('green')
+        self.entities = [Entity(random.randrange(0, max_range[0]), random.randrange(0, max_range[1]), entity_surface.copy()) for i in range(entity_amount)]
+        self.player = MovingEntity(0,0,player_surface)
+        # ---------
+
+        self.camera = Camera(0, 0, max_range[0]+50, max_range[1]+50)
         self.input_handlers = {
-            'keyboard': KeyboardHandler(self, self.key_action_mapping)
+            'controller': ControllerHandler()
         }
+
+        # ---------
+        d = DebugState(game, 
+            player = self.player,
+            controller = self.input_handlers['controller'].controller,
+        )
+        d.enter_state()
+
+    def handle_movement_inputs(self, dt):
+        move_x, move_y = 0, 0
+
+        move_y += float(self.input_handlers['controller'].check_action('move_up'))
+        move_y -= float(self.input_handlers['controller'].check_action('move_down'))
+        move_x += float(self.input_handlers['controller'].check_action('move_left'))
+        move_x -= float(self.input_handlers['controller'].check_action('move_right'))
+
+        if move_x or move_y:
+            angle_radian = math.radians(self.player.angle)
+            dx = -(math.sin(angle_radian) * move_y + math.cos(angle_radian) * move_x)
+            dy = -(math.cos(angle_radian) * move_y + -math.sin(angle_radian) * move_x)
+
+            self.player.move(dx, dy, dt)
         
-    
+        if (left_turn := float(self.input_handlers['controller'].check_action('turn_left'))):
+            self.player.angle += left_turn * self.player.rotation_speed * dt
+
+        if (right_turn := float(self.input_handlers['controller'].check_action('turn_right'))):
+            self.player.angle -= right_turn * self.player.rotation_speed * dt
+        
+        self.player.angle %= 360
+
+    # Base methods
+    def check_event(self, event):
+        super().check_event(event)
+
+        self.camera.check_event(event)
+
     def update(self, dt):
-        if self.actions['start']:
-            self.actions['start'] = False
-            self.exit_state()
-            world_state = WorldState(self.game)
-            world_state.enter_state()
-        
-        if self.actions['quit']:
-            self.game.exit()
+        self.camera.empty()
+        self.camera.add(*self.entities, self.player)
+
+        self.handle_movement_inputs(dt)
+        self.camera.look_at(self.player.rect.centerx, self.player.rect.centery)
     
     def render(self, surface):
-        surface.fill((0, 0, 0))
-        
-        if self.game.font:
-            self.game.font.render(
-                surface, 
-                "Turpentine", 
-                (self.game.SCREEN_WIDTH // 2 - 50, self.game.SCREEN_HEIGHT // 2 - 30), 
-                size=2
-            )
-            
-            self.game.font.render(
-                surface, 
-                "Press SPACE or ENTER to start", 
-                (self.game.SCREEN_WIDTH // 2 - 100, self.game.SCREEN_HEIGHT // 2 + 20), 
-                size=1
-            )
-            
-            self.game.font.render(
-                surface, 
-                "Press ESC to quit", 
-                (self.game.SCREEN_WIDTH // 2 - 50, self.game.SCREEN_HEIGHT // 2 + 50), 
-                size=1
-            )
+        self.camera.draw(surface)

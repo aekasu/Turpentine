@@ -9,7 +9,10 @@ class State:
 
     def check_event(self, event):
         for input_handler in self.input_handlers:
-            self.input_handlers[input_handler].process_inputs(event)
+            try:
+                self.input_handlers[input_handler].process_inputs(event)
+            except Exception as e:
+                print(f'Input handler error for "{input_handler}": {e}')
 
     def update(self, dt):
         ...
