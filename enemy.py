@@ -2,7 +2,7 @@ import pygame
 from entity import Entity
 
 class Enemy(Entity):
-    def __init__(self, x, y, surface, follow_speed=250, acceleration=600, stop_threshold=5):
+    def __init__(self, x, y, surface, follow_speed=500, acceleration=600, stop_threshold=5):
         super().__init__(x, y, surface)
         self.target = None
         self.follow_speed = follow_speed  # Max speed

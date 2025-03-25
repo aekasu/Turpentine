@@ -138,7 +138,7 @@ class Game:
         pygame.quit()
 
 if __name__ == '__main__':
-    from states.test import StartState
+    from states.world_state import WorldState as StartState
 
     g = Game()
     while g.running:
