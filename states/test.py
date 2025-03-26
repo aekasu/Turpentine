@@ -1,5 +1,5 @@
+from inputs import ControllerHandler, KeyboardHandler
 from entity import Entity, MovingEntity
-from inputs import ControllerHandler
 from states.debug import DebugState
 from camera import Camera
 from state import State
@@ -23,6 +23,12 @@ class TestState(State):
 
         self.camera = Camera(0, 0, max_range[0]+50, max_range[1]+50)
         self.input_handlers = {
+            'keyboard': KeyboardHandler({
+                pygame.K_w: 'up',
+                pygame.K_a: 'left',
+                pygame.K_s: 'down',
+                pygame.K_d: 'right',
+            }),
             'controller': ControllerHandler()
         }
 
@@ -35,6 +41,15 @@ class TestState(State):
 
     def handle_movement_inputs(self, dt):
         move_x, move_y = 0, 0
+
+        if self.input_handlers['keyboard'].check_action('up'):
+            self.player.move(0, -1, dt)
+        if self.input_handlers['keyboard'].check_action('down'):
+            self.player.move(0, 1, dt)
+        if self.input_handlers['keyboard'].check_action('left'):
+            self.player.move(-1, 0, dt)
+        if self.input_handlers['keyboard'].check_action('right'):
+            self.player.move(1, 0, dt)
 
         move_y += float(self.input_handlers['controller'].check_action('move_up'))
         move_y -= float(self.input_handlers['controller'].check_action('move_down'))
@@ -68,6 +83,8 @@ class TestState(State):
 
         self.handle_movement_inputs(dt)
         self.camera.look_at(self.player.rect.centerx, self.player.rect.centery)
+
     
     def render(self, surface):
         self.camera.draw(surface)
+        pygame.draw.line(surface, 'blue', (self.player.rect.centerx, self.player.rect.centery), (self.player.x, self.player.y))

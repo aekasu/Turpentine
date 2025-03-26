@@ -34,7 +34,7 @@ class KeyboardHandler(InputHandler):
 
     def process_inputs(self, event):
         keys = pygame.key.get_pressed()
-        for key in self.key_action_mapping:
+        for key in self.action_handler.key_action_mapping:
             if keys[key]:
                 self.action_handler.trigger(key)
     

@@ -9,13 +9,14 @@ class DebugState(State):
             setattr(self, key, value)
 
     def update(self, dt):
-        controller_name = None
+        controller_name = controller_battery = None
         if self.controller:
             controller_name = self.controller.get_name()
+            controller_battery = self.controller.get_power_level()
 
         self.lines = [
             f'FPS: {int(self.game.clock.get_fps())}',
-            f'Controller: {controller_name}',
+            f'Controller: {controller_name} / {controller_battery}',
             f'Coordinates: {self.player.x}, {self.player.y}',
             f'Rotation: {int(self.player.angle)}°',
         ]
