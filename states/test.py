@@ -1,7 +1,7 @@
 from inputs import ControllerHandler, KeyboardHandler
 from entity import Entity, MovingEntity
 from states.debug import DebugState
-from camera import Camera
+from camera import Camera, SmoothFollowCamera
 from state import State
 import random
 import pygame
@@ -20,7 +20,7 @@ class TestState(State):
         self.player = MovingEntity(0,0,player_surface)
         # ---------
 
-        self.camera = Camera(0, 0, max_range[0]+50, max_range[1]+50)
+        self.camera = SmoothFollowCamera(0, 0, max_range[0]+50, max_range[1]+50)
         self.input_handlers = {
             'keyboard': KeyboardHandler({
                 pygame.K_w: 'up',

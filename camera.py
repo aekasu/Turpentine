@@ -2,8 +2,8 @@ import pygame
 import math
 
 class Camera(pygame.sprite.Group):
-    def __init__(self, x, y, w, h, *sprites):
-        super().__init__(*sprites)
+    def __init__(self, x, y, w, h):
+        super().__init__()
         self.init_viewport(x, y, w, h)
         
         self.zoom = 0.5
@@ -18,8 +18,12 @@ class Camera(pygame.sprite.Group):
     def init_viewport(self, x, y, w, h):
         self.viewport = pygame.Rect(x, y, w, h)
 
+    def lerp(self, x, y):
+        return x, y
+
     # offset amount for viewport corner to center the look_at coordinates
     def look_at(self, x, y):
+        x, y = self.lerp(x, y)
         self.offset_x = x - self.viewport.width // (2 * self.zoom)
         self.offset_y = y - self.viewport.height // (2 * self.zoom)
 
@@ -55,3 +59,19 @@ class Camera(pygame.sprite.Group):
     def check_event(self, event):
         for sprite in self.sprites():
             sprite.check_event(event)
+
+
+class SmoothFollowCamera(Camera):
+    def __init__(self, x, y, w, h):
+        super().__init__(x, y, w, h)
+
+        self.follow_speed = 0.1
+        self._lerp_x, self._lerp_y = self.viewport.center
+
+    def lerp(self, x, y):
+        self._lerp_x += (x - self._lerp_x) * self.follow_speed
+        self._lerp_y += (y - self._lerp_y) * self.follow_speed
+        
+        return self._lerp_x, self._lerp_y
+        
+        
