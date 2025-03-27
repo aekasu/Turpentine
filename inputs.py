@@ -48,7 +48,10 @@ class ControllerHandler(InputHandler):
         self.right_stick_x = 3  
         self.right_stick_y = 4  
 
-        # used for processing joystick inputs based on axes
+        self.left_trigger = 2
+        self.right_trigger = 5
+
+        # used for processing default controller inputs based on axes
         self.axis_mapping = {
             (self.left_stick_y, -1): 'move_up',     
             (self.left_stick_y, 1): 'move_down',
@@ -57,7 +60,10 @@ class ControllerHandler(InputHandler):
             (self.right_stick_x, -1): 'turn_left',   
             (self.right_stick_x, 1): 'turn_right',
             (self.right_stick_y, -1): 'turn_down',
-            (self.right_stick_y, 1): 'turn_up',   
+            (self.right_stick_y, 1): 'turn_up',
+
+            (self.left_trigger, 1): 'left_trigger',
+            (self.right_trigger, 1): 'right_trigger'
         }
 
         key_action_mapping = key_action_mapping or {}
@@ -67,15 +73,16 @@ class ControllerHandler(InputHandler):
 
         self.controller = controller
         self.deadzone = 0.2
+        self.trigger_deadzone = 0.1
         self.last_rumble = 0
         self.rumble_cooldown = 500
 
         self.init_controller()
     
     def check_controller(self, controller):
-        if controller.get_numballs() > 0:
-            return True
-        return False
+        if 'qmk' in controller.get_name().lower():
+            return False
+        return True
     
     def init_controller(self):
         if self.controller:
@@ -102,8 +109,15 @@ class ControllerHandler(InputHandler):
 
             axis, direction = axis_dir
             axis_value = self.controller.get_axis(axis)
+
+            # special case trigger handling, normalize axis_value from range -1, 1 to 0, 1
+            if axis in [self.left_trigger, self.right_trigger]:
+                axis_value = (axis_value + 1) / 2
+
+                if axis_value < self.trigger_deadzone:
+                    continue
             
-            if abs(axis_value) < self.deadzone:
+            elif abs(axis_value) < self.deadzone:
                 continue
 
             if (direction < 0 and axis_value < 0) or (direction > 0 and axis_value > 0): 
@@ -111,6 +125,7 @@ class ControllerHandler(InputHandler):
         
         # button inputs
         if event.type == pygame.JOYBUTTONDOWN and event.joy == self.controller.get_id():
+            print(event.button)
             self.action_handler.trigger(event.button)
         
         elif event.type == pygame.JOYBUTTONUP:

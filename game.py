@@ -15,8 +15,8 @@ class Font:
         surface.blit(font.render(text, False, color=color, bgcolor=bgcolor), location)
 
 class Game:
-    def __init__(self):
-        self.SCREEN_WIDTH, self.SCREEN_HEIGHT = 1200, 700
+    def __init__(self, width=None, height=None):
+        self.SCREEN_WIDTH, self.SCREEN_HEIGHT = width or 1200, height or 700
         self.GAME_WIDTH, self.GAME_HEIGHT = self.SCREEN_WIDTH, self.SCREEN_HEIGHT
         self.SCREEN_TITLE = 'Turpentine'
         self.ASSET_DIR = os.path.join('assets')
@@ -140,7 +140,7 @@ class Game:
 if __name__ == '__main__':
     from states.test import TestState as StartState
 
-    g = Game()
+    g = Game(600, 600)
     while g.running:
         g.mainloop()
     g.quit()

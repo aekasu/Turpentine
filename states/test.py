@@ -10,15 +10,13 @@ import math
 class TestState(State):
     def __init__(self, game):
         super().__init__(game, is_overlay=False)
-        random.seed(23)
-
-        entity_amount = 5
+        entity_amount = 50
         max_range = (self.game.GAME_WIDTH - 50, self.game.GAME_HEIGHT - 50)
         entity_surface = pygame.Surface((50,50))
         player_surface = entity_surface.copy()
         entity_surface.fill('red')
         player_surface.fill('green')
-        self.entities = [Entity(random.randrange(0, max_range[0]), random.randrange(0, max_range[1]), entity_surface.copy()) for i in range(entity_amount)]
+        self.entities = [Entity(random.randrange(0, max_range[0]*2), random.randrange(0, max_range[1]*2), entity_surface.copy()) for i in range(entity_amount)]
         self.player = MovingEntity(0,0,player_surface)
         # ---------
 
@@ -40,9 +38,18 @@ class TestState(State):
         )
         d.enter_state()
 
-    def handle_movement_inputs(self, dt):
+    def handle_button_inputs(self, dt):
+        # Zoom
+        pre_zoom = self.camera.zoom
+        dz = float(self.input_handlers['controller'].check_action('right_trigger')) - float(self.input_handlers['controller'].check_action('left_trigger'))
+        self.camera.update_zoom(dz * dt)
+        if self.camera.zoom in [self.camera.min_zoom, self.camera.max_zoom] and self.camera.zoom != pre_zoom:
+            self.input_handlers['controller'].rumble(duration=100)
+
+    def handle_movement_inputs(self, dt):        
         move_x, move_y = 0, 0
 
+        # Keyboard inputs
         if self.input_handlers['keyboard'].check_action('up'):
             self.player.move(0, -1, dt)
         if self.input_handlers['keyboard'].check_action('down'):
@@ -52,6 +59,7 @@ class TestState(State):
         if self.input_handlers['keyboard'].check_action('right'):
             self.player.move(1, 0, dt)
 
+        # Analog controller inputs
         move_y += float(self.input_handlers['controller'].check_action('move_up'))
         move_y -= float(self.input_handlers['controller'].check_action('move_down'))
         move_x += float(self.input_handlers['controller'].check_action('move_left'))
@@ -82,10 +90,10 @@ class TestState(State):
         self.camera.empty()
         self.camera.add(*self.entities, self.player)
 
+        self.handle_button_inputs(dt)
         self.handle_movement_inputs(dt)
-        self.camera.look_at(self.player.rect.centerx, self.player.rect.centery)
 
+        self.camera.look_at(self.player.rect.centerx, self.player.rect.centery)
     
     def render(self, surface):
         self.camera.draw(surface)
-        pygame.draw.line(surface, 'blue', (self.player.rect.centerx, self.player.rect.centery), (self.player.x, self.player.y))
