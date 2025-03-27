@@ -10,6 +10,7 @@ import math
 class TestState(State):
     def __init__(self, game):
         super().__init__(game, is_overlay=False)
+        random.seed(23)
 
         entity_amount = 5
         max_range = (self.game.GAME_WIDTH - 50, self.game.GAME_HEIGHT - 50)

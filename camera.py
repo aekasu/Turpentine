@@ -29,6 +29,9 @@ class Camera(pygame.sprite.Group):
 
             if not self.viewport.colliderect(rotozoomed_rect):
                 continue
+
+            rotozoomed_rect.x -= self.viewport.x
+            rotozoomed_rect.y -= self.viewport.y
             
             rotozoomed_image = pygame.transform.rotozoom(sprite.image, self.angle, self.zoom).convert_alpha()
             surface.blit(rotozoomed_image, rotozoomed_rect)

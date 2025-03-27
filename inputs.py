@@ -72,13 +72,23 @@ class ControllerHandler(InputHandler):
 
         self.init_controller()
     
+    def check_controller(self, controller):
+        if controller.get_numballs() > 0:
+            return True
+        return False
+    
     def init_controller(self):
         if self.controller:
             return
 
-        if pygame.joystick.get_count() > 0:
-            self.controller = pygame.joystick.Joystick(0)
-            self.controller.init()
+        if (controller_count := pygame.joystick.get_count()) > 0:
+            for id_ in range(controller_count):
+                controller = pygame.joystick.Joystick(id_)
+                controller.init()
+                if not self.check_controller(controller):
+                    controller.quit()
+                    continue
+                self.controller = controller
         else:
             print('Controller error: no controller found')
     
