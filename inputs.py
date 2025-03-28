@@ -5,14 +5,21 @@ class ActionHandler:
     def __init__(self, key_action_mapping=None):
         self.key_action_mapping = key_action_mapping or {} # pygame.K_a: 'left'
         self.actions = {
-            action: False \
+            key_action_mapping[action]: False \
             for action in key_action_mapping
-        } # 'left': False
+        } 
+    
+    def trigger_action(self, action, value=True):
+        if action in self.actions:
+            self.actions[action] = value
+    
+    def reset_action(self, action):
+        self.trigger_action(action, value=False)
     
     def trigger(self, key, value=True):
         if not key or not (action:=self.key_action_mapping.get(key, None)):
             return
-        self.actions[action] = value
+        self.trigger_action(action, value)
     
     def reset(self, key):
         self.trigger(key, False)
@@ -27,6 +34,10 @@ class InputHandler:
 
     def check_action(self, action):
         return self.action_handler.actions.get(action, False)
+    
+    def reset_actions(self):
+        for action in self.action_handler.actions:
+            self.action_handler.reset_action(action)
 
 class KeyboardHandler(InputHandler):
     def __init__(self, key_action_mapping):

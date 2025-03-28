@@ -20,7 +20,7 @@ class TestState(State):
         self.player = MovingEntity(0,0,player_surface)
         # ---------
 
-        self.camera = SmoothFollowCamera(0, 0, max_range[0]+50, max_range[1]+50)
+        self.camera = Camera(0, 0, max_range[0]+50, max_range[1]+50)
         self.input_handlers = {
             'keyboard': KeyboardHandler({
                 pygame.K_w: 'up',

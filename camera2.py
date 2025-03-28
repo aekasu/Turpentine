@@ -24,7 +24,7 @@ class Camera(pygame.sprite.Group):
         new_y = x * sin_val + y * cos_val
         return new_x, new_y
 
-    def custom_draw(self, angle_rad=None):
+    def draw(self, angle_rad=None):
         self.center_target_camera()
         if self.target:
             origin = pygame.math.Vector2(self.target.rect.center)

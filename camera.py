@@ -10,8 +10,7 @@ class Camera(pygame.sprite.Group):
         self.min_zoom = 0.5
         self.max_zoom = 1.5
         self.angle = 0
-        self.offset_x = 0
-        self.offset_y = 0
+        self.offset = pygame.math.Vector2()
 
     def init_viewport(self, x, y, w, h):
         self.viewport = pygame.Rect(x, y, w, h)
@@ -22,8 +21,8 @@ class Camera(pygame.sprite.Group):
     # calculate viewport coordinate offset to center look_at coordinates
     def look_at(self, x, y):
         x, y = self.lerp(x, y)
-        self.offset_x = x - self.viewport.width // (2 * self.zoom)
-        self.offset_y = y - self.viewport.height // (2 * self.zoom)
+        self.offset.x = x - self.viewport.width // (2 * self.zoom)
+        self.offset.y = y - self.viewport.height // (2 * self.zoom)
 
     def update_zoom(self, amount=0):
         if not amount:
@@ -48,22 +47,26 @@ class Camera(pygame.sprite.Group):
 
     def draw(self, surface):        
         for sprite in sorted(self.sprites(), key=lambda sprite: sprite.rect.centery):
+            # calculate relative rotation using the sprite's actual rotation and perceived rotation through camera angle            
+            total_rotation = self.angle - sprite.angle
+            if hasattr(sprite, 'forward_vector'):
+                # print(self.angle, sprite.angle)
+                ...
+
             rotated_x, rotated_y = self.rotate_point(
                 sprite.x, sprite.y, 
-                self.viewport.centerx / self.zoom + self.offset_x, 
-                self.viewport.centery / self.zoom + self.offset_y, 
+                self.viewport.centerx / self.zoom + self.offset.x, 
+                self.viewport.centery / self.zoom + self.offset.y, 
                 self.angle
             )
 
             # offset sprite image coordinates using viewport centering offset
-            screen_x = (rotated_x - self.offset_x) * self.zoom
-            screen_y = (rotated_y - self.offset_y) * self.zoom
+            screen_x = (rotated_x - self.offset.x) * self.zoom
+            screen_y = (rotated_y - self.offset.y) * self.zoom
             
             screen_w = sprite.w * self.zoom
             screen_h = sprite.h * self.zoom
 
-            # calculate relative rotation using the sprite's actual rotation and perceived rotation through camera angle            
-            total_rotation = self.angle - sprite.angle
             
             # offset sprite location for viewport detection
             rotozoomed_rect = pygame.Rect(

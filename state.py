@@ -21,9 +21,9 @@ class State:
         ...
     
     def reset_actions(self):
-        for action in self.actions:
-            self.actions[action] = False
-    
+        for input_handler in self.input_handlers:
+            self.input_handlers[input_handler].reset_actions()
+
     def enter_state(self):
         stack = self.game.state_stack
         if self.is_overlay:
