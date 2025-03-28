@@ -63,7 +63,6 @@ class Camera(pygame.sprite.Group):
             # offset sprite image coordinates using viewport centering offset
             screen_x = (rotated_x - self.offset.x) * self.zoom
             screen_y = (rotated_y - self.offset.y) * self.zoom
-            
             screen_w = sprite.w * self.zoom
             screen_h = sprite.h * self.zoom
 
