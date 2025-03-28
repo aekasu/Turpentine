@@ -27,6 +27,10 @@ class TestState(State):
                 pygame.K_a: 'left',
                 pygame.K_s: 'down',
                 pygame.K_d: 'right',
+                pygame.K_LEFT: 'rotate_left',
+                pygame.K_RIGHT: 'rotate_right',
+                pygame.K_UP: 'zoom_in',
+                pygame.K_DOWN: 'zoom_out'
             }),
             'controller': ControllerHandler()
         }
@@ -39,32 +43,46 @@ class TestState(State):
         d.enter_state()
 
     def handle_button_inputs(self, dt):
-        # Zoom
+        # Keyboard inputs
+        dz = float(self.input_handlers['keyboard'].check_action('zoom_in')) - float(self.input_handlers['keyboard'].check_action('zoom_out'))
+        dz *= 1
+
+        # Analog controller inputs
+        dz += float(self.input_handlers['controller'].check_action('right_trigger')) - float(self.input_handlers['controller'].check_action('left_trigger'))
+        
+
+        # Process the values
         pre_zoom = self.camera.zoom
-        dz = float(self.input_handlers['controller'].check_action('right_trigger')) - float(self.input_handlers['controller'].check_action('left_trigger'))
         self.camera.update_zoom(dz * dt)
-        if self.camera.zoom in [self.camera.min_zoom, self.camera.max_zoom] and self.camera.zoom != pre_zoom:
-            self.input_handlers['controller'].rumble(duration=100)
+
+        if self.input_handlers['controller'].controller:
+            if self.camera.zoom in [self.camera.min_zoom, self.camera.max_zoom] and self.camera.zoom != pre_zoom:
+                self.input_handlers['controller'].rumble(duration=100)
 
     def handle_movement_inputs(self, dt):        
         move_x, move_y = 0, 0
 
         # Keyboard inputs
         if self.input_handlers['keyboard'].check_action('up'):
-            self.player.move(0, -1, dt)
+            move_y += 1
         if self.input_handlers['keyboard'].check_action('down'):
-            self.player.move(0, 1, dt)
+            move_y -= 1
         if self.input_handlers['keyboard'].check_action('left'):
-            self.player.move(-1, 0, dt)
+            move_x += 1
         if self.input_handlers['keyboard'].check_action('right'):
-            self.player.move(1, 0, dt)
-
+            move_x -= 1
+        if self.input_handlers['keyboard'].check_action('rotate_left'):
+            self.player.angle += 1 * self.player.rotation_speed * dt
+        if self.input_handlers['keyboard'].check_action('rotate_right'):
+            self.player.angle -= 1 * self.player.rotation_speed * dt
+        
         # Analog controller inputs
         move_y += float(self.input_handlers['controller'].check_action('move_up'))
         move_y -= float(self.input_handlers['controller'].check_action('move_down'))
         move_x += float(self.input_handlers['controller'].check_action('move_left'))
         move_x -= float(self.input_handlers['controller'].check_action('move_right'))
 
+        # Process the values
         if move_x or move_y:
             angle_radian = math.radians(self.player.angle)
             dx = -(math.sin(angle_radian) * move_y + math.cos(angle_radian) * move_x)
