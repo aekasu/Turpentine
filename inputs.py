@@ -125,7 +125,6 @@ class ControllerHandler(InputHandler):
         
         # button inputs
         if event.type == pygame.JOYBUTTONDOWN and event.joy == self.controller.get_id():
-            print(event.button)
             self.action_handler.trigger(event.button)
         
         elif event.type == pygame.JOYBUTTONUP:

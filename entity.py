@@ -12,6 +12,7 @@ class Entity(pygame.sprite.Sprite):
 
         self.image = surface
         self.rect = surface.get_rect()
+        self.angle = 0
 
         self.movement_speed = 300
         self.velocity = pygame.math.Vector2(0,0)
@@ -57,7 +58,6 @@ class MovingEntity(Entity):
 
         self.movement_speed = 400
         self.rotation_speed = 180
-        self.angle = 0
         self.forward_vector = pygame.math.Vector2(0, -1)  # up by default
     
     def set_angle(self, angle): #

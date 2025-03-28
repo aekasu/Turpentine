@@ -12,8 +12,8 @@ class TestState(State):
         super().__init__(game, is_overlay=False)
         entity_amount = 50
         max_range = (self.game.GAME_WIDTH - 50, self.game.GAME_HEIGHT - 50)
-        entity_surface = pygame.Surface((50,50))
-        player_surface = entity_surface.copy()
+        entity_surface = pygame.Surface((50,50)).convert_alpha()
+        player_surface = pygame.Surface((30, 30)).convert_alpha()
         entity_surface.fill('red')
         player_surface.fill('green')
         self.entities = [Entity(random.randrange(0, max_range[0]*2), random.randrange(0, max_range[1]*2), entity_surface.copy()) for i in range(entity_amount)]
@@ -89,6 +89,7 @@ class TestState(State):
     def update(self, dt):
         self.camera.empty()
         self.camera.add(*self.entities, self.player)
+        self.camera.angle = self.player.angle
 
         self.handle_button_inputs(dt)
         self.handle_movement_inputs(dt)
