@@ -10,9 +10,14 @@ class Font:
         self.large = pygame.font.Font(font_path, 20)
         self.font_sizes = [self.small, self.medium, self.large]
     
-    def render(self, surface, text, location, color=(255, 255, 255), bgcolor=None, size=1):
+    def render(self, surface, text, location, color=(255, 255, 255), bgcolor=None, size=1, center_text=False):
         font = self.font_sizes[size]
-        surface.blit(font.render(text, False, color=color, bgcolor=bgcolor), location)
+        font_surface = font.render(text, False, color=color, bgcolor=bgcolor)
+        font_rect = font_surface.get_rect()
+        font_rect.topleft = location
+        if center_text:
+            font_rect.center = location
+        surface.blit(font_surface, font_rect)
 
 class Game:
     def __init__(self, width=None, height=None):
