@@ -1,6 +1,3 @@
 # Turpentine
 
-Run:
-```bash
-python3 game.py
-```
+A minimalistic 2D game framework for PyGame.
