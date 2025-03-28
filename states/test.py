@@ -37,6 +37,7 @@ class TestState(State):
 
         # ---------
         d = DebugState(game, 
+            title = 'Camera Test',
             camera = self.camera,
             player = self.player,
             controller = self.input_handlers['controller'],

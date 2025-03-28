@@ -7,14 +7,15 @@ class DebugState(State):
 
         for key, value in kwargs.items():
             setattr(self, key, value)
+        
+        if not hasattr(self, 'title'):
+            self.title = 'Untitled'
 
     def update(self, dt):
         controller_name = controller_battery = None
         if self.controller.controller:
             controller_name = self.controller.controller.get_name()
             controller_battery = self.controller.controller.get_power_level()
-
-        self.title = 'Camera Test'
 
         self.header = [
             f'FPS: {int(self.game.clock.get_fps())}',
