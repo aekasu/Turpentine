@@ -45,7 +45,7 @@ class TestState(State):
         )
         d.enter_state()
 
-    def handle_button_inputs(self, dt):
+    def update_button_inputs(self, dt):
         # Keyboard inputs
         dz = float(self.input_handlers['keyboard'].check_action('zoom_in')) - float(self.input_handlers['keyboard'].check_action('zoom_out'))
         dz *= 1
@@ -62,7 +62,7 @@ class TestState(State):
             if self.camera.zoom in [self.camera.min_zoom, self.camera.max_zoom] and self.camera.zoom != pre_zoom:
                 self.input_handlers['controller'].rumble(duration=100)
 
-    def handle_movement_inputs(self, dt):        
+    def update_movement_inputs(self, dt):        
         move_x, move_y = 0, 0
 
         # Keyboard inputs
@@ -100,22 +100,23 @@ class TestState(State):
             self.player.angle -= right_turn * self.player.rotation_speed * dt
         
         self.player.angle %= 360
+    
+    def update_camera(self, dt):
+        self.camera.empty()
+        self.camera.add(*self.entities, self.player)
+        self.camera.angle = self.player.angle
+        self.camera.update(dt)
+        self.camera.look_at(self.player.rect.centerx, self.player.rect.centery)
 
     # Base methods
     def check_event(self, event):
         super().check_event(event)
-
         self.camera.check_event(event)
 
     def update(self, dt):
-        self.camera.empty()
-        self.camera.add(*self.entities, self.player)
-        self.camera.angle = self.player.angle
+        self.update_button_inputs(dt)
+        self.update_movement_inputs(dt)
+        self.update_camera(dt)
 
-        self.handle_button_inputs(dt)
-        self.handle_movement_inputs(dt)
-
-        self.camera.look_at(self.player.rect.centerx, self.player.rect.centery)
-    
     def render(self, surface):
         self.camera.draw(surface)

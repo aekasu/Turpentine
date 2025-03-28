@@ -12,12 +12,9 @@ class Entity(pygame.sprite.Sprite):
 
         self.image = surface
         self.rect = surface.get_rect()
-        self.angle = 0
-
-        self.movement_speed = 300
-        self.velocity = pygame.math.Vector2(0,0)
-
         self.set_location(x, y)
+
+        self.angle = 0
     
     @property
     def x(self):
@@ -41,23 +38,19 @@ class Entity(pygame.sprite.Sprite):
     def set_size(self, w, h):
         self.rect.width, self.rect.height = w, h
     
-    def move(self, dx, dy, dt):
-        self.rect.x += dx * self.movement_speed * dt
-        self.rect.y += dy * self.movement_speed * dt
-    
     def check_event(self, event):
         ...
     
     def update(self, dt):
-        self.rect.x += self.velocity.x * self.movement_speed * dt
-        self.rect.y += self.velocity.y * self.movement_speed * dt
+        ...
 
 class MovingEntity(Entity):
     def __init__(self, x, y, surface):
         super().__init__(x, y, surface)
 
-        self.movement_speed = 400
         self.rotation_speed = 180
+        self.movement_speed = 400
+        self.velocity = pygame.math.Vector2(0,0)
         self.forward_vector = pygame.math.Vector2(0, -1)  # up by default
     
     def set_angle(self, angle): #
@@ -70,6 +63,10 @@ class MovingEntity(Entity):
     
     def change_angle(self, delta_angle):
         self.set_angle(self.angle + delta_angle)
+    
+    def move(self, dx, dy, dt):
+        self.rect.x += dx * self.movement_speed * dt
+        self.rect.y += dy * self.movement_speed * dt
     
     def move_forward(self, dt):
         self.velocity = self.forward_vector.copy()
@@ -87,5 +84,8 @@ class MovingEntity(Entity):
     
     def update(self, dt):
         super().update(dt)
+        
+        self.rect.x += self.velocity.x * self.movement_speed * dt
+        self.rect.y += self.velocity.y * self.movement_speed * dt
         
         self.velocity = pygame.math.Vector2(0, 0)

@@ -143,7 +143,7 @@ class Game:
         pygame.quit()
 
 if __name__ == '__main__':
-    from states.world_state import WorldState as StartState
+    from states.test import TestState as StartState
 
     g = Game(600, 600)
     while g.running:
