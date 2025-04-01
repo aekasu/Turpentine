@@ -1,16 +1,62 @@
 import pygame
 import math
+from entity import Entity
+
+class Tile(Entity):
+    def __init__(self, x, y, surface):
+        super().__init__(x, y, surface)
+
+class Region:
+    def __init__(self, x, y, w, h, tile_size):
+        self.x, self.y, self.w, self.h = x, y, w, h
+        self.rect = pygame.Rect(x, y, w, h)
+        self.tile_size = tile_size
+
+        #
+        ground = pygame.Surface((self.tile_size,)*2)
+        ground.fill('yellow')
+
+        self.tiles = {
+            0: ground,
+        }
+
+    def __contains__(self, target_rect):
+        return self.rect.colliderect(target_rect)
+    
+    def get_tile(self, x, y):
+        return Tile(x, y, self.tiles[0])
+    
+    def get_tiles(self, target_rect):
+        tiles = []
+        for tile_x in range(target_rect.x, target_rect.x+target_rect.width, self.tile_size):
+            for tile_y in range(target_rect.y, target_rect.y+target_rect.height, self.tile_size):
+                tiles.append(self.get_tile(tile_x, tile_y))
+        return tiles
+    
+    def check_event(self, event):
+        ...
 
 class Camera(pygame.sprite.Group):
     def __init__(self, x, y, w, h):
         super().__init__()
         self.init_viewport(x, y, w, h)
-        self.zoom = 0.5
+        self.zoom = 1
         self.zoom_speed = 1
         self.min_zoom = 0.5
         self.max_zoom = 1.5
         self.angle = 0
         self.offset = pygame.math.Vector2()
+        self.regions = []
+
+    @property
+    def position_rect(self):
+        # Return the rectangle in world coordinates that represents what's visible in the viewport
+        return pygame.Rect(
+            self.offset.x,  # Left
+            self.offset.y,  # Top
+            self.viewport.width / self.zoom,  # Width in world coordinates
+            self.viewport.height / self.zoom  # Height in world coordinates
+        )
 
     def init_viewport(self, x, y, w, h):
         self.viewport = pygame.Rect(x, y, w, h)
@@ -30,6 +76,15 @@ class Camera(pygame.sprite.Group):
         new_zoom = self.zoom + amount * self.zoom_speed
         self.zoom = max(self.min_zoom, min(self.max_zoom, new_zoom))
 
+    def draw_region(self, surface, region):
+        if not self.position_rect in region:
+            return
+        
+        tiles = region.get_tiles(self.position_rect)
+
+        for tile in tiles:
+            surface.blit(tile.image, tile.rect)
+
     # rotate point around center
     def rotate_point(self, x, y, cx, cy, angle):
         angle_rad = math.radians(angle)
@@ -45,43 +100,44 @@ class Camera(pygame.sprite.Group):
         # revert offset
         return rotated_x + cx, rotated_y + cy
 
-    def draw(self, surface):        
+    def draw_sprite(self, surface, sprite):        
+        total_rotation = self.angle - sprite.angle
+
+        rotated_x, rotated_y = self.rotate_point(
+            sprite.x, sprite.y, 
+            self.viewport.centerx / self.zoom + self.offset.x, 
+            self.viewport.centery / self.zoom + self.offset.y, 
+            self.angle
+        )
+
+        screen_x = (rotated_x - self.offset.x) * self.zoom
+        screen_y = (rotated_y - self.offset.y) * self.zoom
+        screen_w = sprite.w * self.zoom
+        screen_h = sprite.h * self.zoom
+
+        rotozoomed_rect = pygame.Rect(
+            screen_x + self.viewport.x,
+            screen_y + self.viewport.y,
+            screen_w,
+            screen_h
+        )
+
+        if not self.viewport.colliderect(rotozoomed_rect):
+            return
+
+        rotozoomed_image = pygame.transform.rotozoom(sprite.image, -total_rotation, self.zoom).convert_alpha()
+        surface.blit(rotozoomed_image, rotozoomed_rect)
+    
+    def draw(self, surface):
+        for region in self.regions:
+            self.draw_region(surface, region)
         for sprite in sorted(self.sprites(), key=lambda sprite: sprite.rect.centery):
-            # calculate relative rotation using the sprite's actual rotation and perceived rotation through camera angle            
-            total_rotation = self.angle - sprite.angle
-            if hasattr(sprite, 'forward_vector'):
-                # print(self.angle, sprite.angle)
-                ...
-
-            rotated_x, rotated_y = self.rotate_point(
-                sprite.x, sprite.y, 
-                self.viewport.centerx / self.zoom + self.offset.x, 
-                self.viewport.centery / self.zoom + self.offset.y, 
-                self.angle
-            )
-
-            # offset sprite image coordinates using viewport centering offset
-            screen_x = (rotated_x - self.offset.x) * self.zoom
-            screen_y = (rotated_y - self.offset.y) * self.zoom
-            screen_w = sprite.w * self.zoom
-            screen_h = sprite.h * self.zoom
-
-            
-            # offset sprite location for viewport detection
-            rotozoomed_rect = pygame.Rect(
-                screen_x + self.viewport.x,
-                screen_y + self.viewport.y,
-                screen_w,
-                screen_h
-            )
-
-            if not self.viewport.colliderect(rotozoomed_rect):
-                continue
-
-            rotozoomed_image = pygame.transform.rotozoom(sprite.image, -total_rotation, self.zoom).convert_alpha()
-            surface.blit(rotozoomed_image, rotozoomed_rect)
+            self.draw_sprite(surface, sprite)
 
     def check_event(self, event):
+        for region in self.regions:
+            region.check_event(event)
+
         for sprite in self.sprites():
             sprite.check_event(event)
 

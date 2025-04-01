@@ -1,7 +1,7 @@
 from inputs import ControllerHandler, KeyboardHandler
 from entity import Entity, MovingEntity
 from states.debug import DebugState
-from camera import Camera, SmoothFollowCamera
+from camera import Camera, SmoothFollowCamera, Region
 from state import State
 import random
 import pygame
@@ -10,17 +10,8 @@ import math
 class TestState(State):
     def __init__(self, game):
         super().__init__(game, is_overlay=False)
-        entity_amount = 50
-        max_range = (self.game.GAME_WIDTH - 50, self.game.GAME_HEIGHT - 50)
-        entity_surface = pygame.Surface((50,50)).convert_alpha()
-        player_surface = pygame.Surface((30, 30)).convert_alpha()
-        entity_surface.fill('red')
-        player_surface.fill('green')
-        self.entities = [Entity(random.randrange(0, max_range[0]*2), random.randrange(0, max_range[1]*2), entity_surface.copy()) for i in range(entity_amount)]
-        self.player = MovingEntity(0,0,player_surface)
-        # ---------
 
-        self.camera = Camera(0, 0, max_range[0]+50, max_range[1]+50)
+        self.camera = Camera(0, 0, self.game.GAME_WIDTH, self.game.GAME_HEIGHT)
         self.input_handlers = {
             'keyboard': KeyboardHandler({
                 pygame.K_w: 'up',
@@ -35,15 +26,30 @@ class TestState(State):
             'controller': ControllerHandler()
         }
 
-        # ---------
-        d = DebugState(game, 
+        self.debug()
+    
+    # Used to set up testing conditions ===================================
+    def debug(self):
+        entity_amount = 10
+        max_range = (self.game.GAME_WIDTH - 50, self.game.GAME_HEIGHT - 50)
+        entity_surface = pygame.Surface((50,50)).convert_alpha()
+        player_surface = pygame.Surface((30, 30)).convert_alpha()
+        entity_surface.fill('red')
+        player_surface.fill('green')
+        self.entities = [Entity(random.randrange(0, max_range[0]), random.randrange(0, max_range[1]), entity_surface.copy()) for i in range(entity_amount)]
+        self.player = MovingEntity(0,0,player_surface)
+
+        self.region = Region(0,0,max_range[0] + 50, max_range[1] + 50, 40)
+        self.camera.regions.append(self.region)
+
+        DebugState(self.game, 
             title = 'Camera Test',
             camera = self.camera,
             player = self.player,
             controller = self.input_handlers['controller'],
             keyboard = self.input_handlers['keyboard']
-        )
-        d.enter_state()
+        ).enter_state()
+    # =====================================================================
 
     def update_button_inputs(self, dt):
         # Keyboard inputs
@@ -92,7 +98,7 @@ class TestState(State):
             dy = -(math.cos(angle_radian) * move_y + -math.sin(angle_radian) * move_x)
 
             self.player.move(dx, dy, dt)
-        
+
         if (left_turn := float(self.input_handlers['controller'].check_action('turn_left'))):
             self.player.angle += left_turn * self.player.rotation_speed * dt
 
@@ -119,4 +125,6 @@ class TestState(State):
         self.update_camera(dt)
 
     def render(self, surface):
+        pygame.draw.rect(surface, 'gray', self.camera.position_rect, 2)
+        pygame.draw.rect(surface, 'yellow', self.camera.regions[0].rect, 2)
         self.camera.draw(surface)
